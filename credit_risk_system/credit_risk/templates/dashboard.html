@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary h-100">
+            <div class="card-body">
+                <h5 class="card-title">Total Applications</h5>
+                <p class="card-text display-6">{{ total_applications }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success h-100">
+            <div class="card-body">
+                <h5 class="card-title">Approved</h5>
+                <p class="card-text display-6">{{ approved_applications }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-danger h-100">
+            <div class="card-body">
+                <h5 class="card-title">Defaulted</h5>
+                <p class="card-text display-6">{{ defaulted_applications }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-dark bg-warning h-100">
+            <div class="card-body">
+                <h5 class="card-title">Avg PD</h5>
+                <p class="card-text display-6">{{ avg_pd|floatformat:2 }}%</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Risk Surface Visualization</h5>
+            </div>
+            <div class="card-body">
+                <div id="risk-surface">
+                    {{ risk_surface|safe }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5>Portfolio Risk Distribution</h5>
+            </div>
+            <div class="card-body">
+                <div id="portfolio-chart">
+                    {{ portfolio_chart|safe }}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5>Default Event Timeline</h5>
+            </div>
+            <div class="card-body">
+                <div id="default-timeline">
+                    {{ default_timeline|safe }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Recent Applications</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Customer</th>
+                                <th>Amount</th>
+                                <th>Term</th>
+                                <th>Purpose</th>
+                                <th>Status</th>
+                                <th>Risk Score</th>
+                                <th>PD</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for app in applications %}
+                            <tr>
+                                <td>{{ app.customer.name }}</td>
+                                <td>${{ app.amount|floatformat:2 }}</td>
+                                <td>{{ app.term }} months</td>
+                                <td>{{ app.purpose|truncatewords:5 }}</td>
+                                <td>
+                                    <span class="badge bg-{% if app.status == 'approved' %}success{% elif app.status == 'rejected' %}danger{% elif app.status == 'defaulted' %}dark{% else %}warning{% endif %}">
+                                        {{ app.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if app.riskassessment %}
+                                        {{ app.riskassessment.risk_score }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if app.riskassessment %}
+                                        {{ app.riskassessment.probability_of_default|floatformat:2 }}%
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'customer_detail' app.customer.id %}" class="btn btn-sm btn-primary">View</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // You can add interactive JavaScript here if needed
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize any dashboard-specific JS
+    });
+</script>
+{% endblock %}

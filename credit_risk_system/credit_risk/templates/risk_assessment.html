@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5>Risk Assessment for {{ application.customer.name }}</h5>
+        <span class="badge bg-{% if application.status == 'approved' %}success{% elif application.status == 'rejected' %}danger{% elif application.status == 'defaulted' %}dark{% else %}warning{% endif %}">
+            {{ application.get_status_display }}
+        </span>
+    </div>
+    <div class="card-body">
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <h6>Application Details</h6>
+                <dl class="row">
+                    <dt class="col-sm-4">Amount</dt>
+                    <dd class="col-sm-8">${{ application.amount|floatformat:2 }}</dd>
+                    
+                    <dt class="col-sm-4">Term</dt>
+                    <dd class="col-sm-8">{{ application.term }} months</dd>
+                    
+                    <dt class="col-sm-4">Purpose</dt>
+                    <dd class="col-sm-8">{{ application.purpose }}</dd>
+                    
+                    <dt class="col-sm-4">Applied On</dt>
+                    <dd class="col-sm-8">{{ application.applied_at }}</dd>
+                </dl>
+            </div>
+            <div class="col-md-6">
+                <h6>Risk Assessment</h6>
+                <dl class="row">
+                    <dt class="col-sm-4">Risk Score</dt>
+                    <dd class="col-sm-8">{{ application.riskassessment.risk_score }}</dd>
+                    
+                    <dt class="col-sm-4">Probability of Default</dt>
+                    <dd class="col-sm-8">{{ application.riskassessment.probability_of_default|floatformat:2 }}%</dd>
+                    
+                    <dt class="col-sm-4">Decision Reason</dt>
+                    <dd class="col-sm-8">{{ application.riskassessment.decision_reason }}</dd>
+                    
+                    <dt class="col-sm-4">Assessed On</dt>
+                    <dd class="col-sm-8">{{ application.riskassessment.assessed_at }}</dd>
+                </dl>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h6>Alternative Data Factors</h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="alternative-data-chart" style="height: 300px;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h6>Risk Factors</h6>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="risk-factors-chart" height="300"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card-footer">
+        <div class="d-flex justify-content-between">
+            <a href="{% url 'customer_detail' application.customer.id %}" class="btn btn-secondary">Back to Customer</a>
+            <div>
+                {% if application.status == 'pending' %}
+                    <a href="{% url 'approve_application' application.id %}" class="btn btn-success">Approve</a>
+                    <a href="{% url 'reject_application' application.id %}" class="btn btn-danger">Reject</a>
+                {% elif application.status == 'approved' %}
+                    <a href="{% url 'mark_as_defaulted' application.id %}" class="btn btn-dark">Mark as Defaulted</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Alternative data chart
+        const altData = JSON.parse('{{ alternative_data_json|escapejs }}');
+        const altDataTypes = altData.map(item => item.data_type);
+        const altConfidence = altData.map(item => item.confidence_score * 100);
+        
+        const altDataCtx = document.getElementById('alternative-data-chart').getContext('2d');
+        new Chart(altDataCtx, {
+            type: 'bar',
+            data: {
+                labels: altDataTypes,
+                datasets: [{
+                    label: 'Confidence Score (%)',
+                    data: altConfidence,
+                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                }
+            }
+        });
+        
+        // Risk factors chart
+        const riskFactorsCtx = document.getElementById('risk-factors-chart').getContext('2d');
+        new Chart(riskFactorsCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Credit History', 'Alternative Data', 'Debt-to-Income', 'Loan Term'],
+                datasets: [{
+                    data: [40, 30, 20, 10],
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.7)',
+                        'rgba(54, 162, 235, 0.7)',
+                        'rgba(255, 206, 86, 0.7)',
+                        'rgba(75, 192, 192, 0.7)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

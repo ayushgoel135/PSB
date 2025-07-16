@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Defaulter Tracking</h1>
+    <div>
+        <span class="badge bg-danger">Total Defaulters: {{ total_defaulters }}</span>
+        {% if avg_default_amount %}
+        <span class="badge bg-warning text-dark ms-2">Avg Default Amount: ${{ avg_default_amount|floatformat:2 }}</span>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                {{ filter_form.risk_score_min.label_tag }}
+                {{ filter_form.risk_score_min }}
+            </div>
+            <div class="col-md-3">
+                {{ filter_form.risk_score_max.label_tag }}
+                {{ filter_form.risk_score_max }}
+            </div>
+            <div class="col-md-3">
+                {{ filter_form.pd_min.label_tag }}
+                {{ filter_form.pd_min }}
+            </div>
+            <div class="col-md-3">
+                {{ filter_form.pd_max.label_tag }}
+                {{ filter_form.pd_max }}
+            </div>
+            <div class="col-md-3">
+                {{ filter_form.status.label_tag }}
+                {{ filter_form.status }}
+            </div>
+            <div class="col-md-3 align-self-end">
+                <button type="submit" class="btn btn-primary">Filter</button>
+                <a href="{% url 'defaulter_tracking' %}" class="btn btn-outline-secondary">Reset</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Customer</th>
+                        <th>Amount</th>
+                        <th>Term</th>
+                        <th>Purpose</th>
+                        <th>Risk Score</th>
+                        <th>PD</th>
+                        <th>Default Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for defaulter in defaulters %}
+                    <tr>
+                        <td>{{ defaulter.customer.name }}</td>
+                        <td>${{ defaulter.amount|floatformat:2 }}</td>
+                        <td>{{ defaulter.term }} months</td>
+                        <td>{{ defaulter.purpose|truncatewords:3 }}</td>
+                        <td>{{ defaulter.riskassessment.risk_score }}</td>
+                        <td>{{ defaulter.riskassessment.probability_of_default|floatformat:2 }}%</td>
+                        <td>{{ defaulter.decision_at|date:"Y-m-d" }}</td>
+                        <td>
+                            <a href="{% url 'customer_detail' defaulter.customer.id %}" class="btn btn-sm btn-primary">View</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center">No defaulters found matching your criteria</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4">
+    <div class="card">
+        <div class="card-header">
+            <h5>Default Pattern Analysis</h5>
+        </div>
+        <div class="card-body">
+            <div id="default-pattern-chart" style="height: 400px;"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // This would be populated with actual data from your backend
+        const defaultPatternData = {
+            x: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+            y: [5, 8, 6, 10, 7, 12, 15, 9, 11, 14, 10, 8],
+            type: 'bar',
+            name: 'Defaults by Month'
+        };
+        
+        const layout = {
+            title: 'Monthly Default Patterns',
+            xaxis: {title: 'Month'},
+            yaxis: {title: 'Number of Defaults'}
+        };
+        
+        Plotly.newPlot('default-pattern-chart', [defaultPatternData], layout);
+    });
+</script>
+{% endblock %}

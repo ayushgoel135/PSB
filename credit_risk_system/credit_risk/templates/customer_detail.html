@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>{{ customer.name }}</h1>
+    <div>
+        <a href="{% url 'customer_update' customer.id %}" class="btn btn-secondary">Edit</a>
+        <a href="{% url 'application_create' customer.id %}" class="btn btn-primary">New Application</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>Customer Details</h5>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-4">Email</dt>
+                    <dd class="col-sm-8">{{ customer.email }}</dd>
+                    
+                    <dt class="col-sm-4">Phone</dt>
+                    <dd class="col-sm-8">{{ customer.phone }}</dd>
+                    
+                    <dt class="col-sm-4">Address</dt>
+                    <dd class="col-sm-8">{{ customer.address }}</dd>
+                    
+                    <dt class="col-sm-4">Credit Score</dt>
+                    <dd class="col-sm-8">{{ customer.get_credit_score_display }}</dd>
+                    
+                    <dt class="col-sm-4">Income</dt>
+                    <dd class="col-sm-8">${{ customer.income|floatformat:2 }}</dd>
+                    
+                    <dt class="col-sm-4">Employment</dt>
+                    <dd class="col-sm-8">{{ customer.employment_status }}</dd>
+                </dl>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>Alternative Data</h5>
+            </div>
+            <div class="card-body">
+                {% if alternative_data %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Source</th>
+                                <th>Confidence</th>
+                                <th>Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for data in alternative_data %}
+                            <tr>
+                                <td>{{ data.data_type }}</td>
+                                <td>{{ data.source }}</td>
+                                <td>{{ data.confidence_score|floatformat:2 }}</td>
+                                <td>{{ data.value|truncatechars:30 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p>No alternative data available for this customer.</p>
+                {% endif %}
+                <a href="#" class="btn btn-sm btn-primary">Add Alternative Data</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>Credit Applications</h5>
+            </div>
+            <div class="card-body">
+                {% if applications %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Amount</th>
+                                <th>Term</th>
+                                <th>Purpose</th>
+                                <th>Status</th>
+                                <th>Risk Score</th>
+                                <th>PD</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for app in applications %}
+                            <tr>
+                                <td>${{ app.amount|floatformat:2 }}</td>
+                                <td>{{ app.term }} months</td>
+                                <td>{{ app.purpose|truncatewords:3 }}</td>
+                                <td>
+                                    <span class="badge bg-{% if app.status == 'approved' %}success{% elif app.status == 'rejected' %}danger{% elif app.status == 'defaulted' %}dark{% else %}warning{% endif %}">
+                                        {{ app.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if app.riskassessment %}
+                                        {{ app.riskassessment.risk_score }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if app.riskassessment %}
+                                        {{ app.riskassessment.probability_of_default|floatformat:2 }}%
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'assess_risk' app.id %}" class="btn btn-sm btn-primary">View</a>
+                                    {% if app.status == 'pending' %}
+                                        <a href="{% url 'approve_application' app.id %}" class="btn btn-sm btn-success">Approve</a>
+                                        <a href="{% url 'reject_application' app.id %}" class="btn btn-sm btn-danger">Reject</a>
+                                    {% elif app.status == 'approved' %}
+                                        <a href="{% url 'mark_as_defaulted' app.id %}" class="btn btn-sm btn-dark">Mark Defaulted</a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p>No credit applications for this customer.</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        {% if payment_history.exists %}
+        <div class="card">
+            <div class="card-header">
+                <h5>Payment History</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Due Date</th>
+                                <th>Amount</th>
+                                <th>Paid Date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for payment in payment_history %}
+                            <tr>
+                                <td>{{ payment.due_date }}</td>
+                                <td>${{ payment.amount_paid|floatformat:2 }}</td>
+                                <td>{{ payment.paid_date|default:"-" }}</td>
+                                <td>
+                                    <span class="badge bg-{% if payment.status == 'paid' %}success{% elif payment.status == 'late' %}warning{% else %}danger{% endif %}">
+                                        {{ payment.status|title }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
