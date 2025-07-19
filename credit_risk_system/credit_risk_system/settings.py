@@ -23,9 +23,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-lbzyq6w9hg182j34qo5ekit-7z$%c0-!9enz6w=t3&i*bco-9('
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ["https://psb-clqu.onrender.com", "localhost"] 
 
 
 # Application definition
